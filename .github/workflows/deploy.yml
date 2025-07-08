@@ -1,0 +1,100 @@
+name: Deploy Matrix Instance
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  checkout:
+    name: Checkout Code
+    runs-on: ubuntu-latest
+    outputs:
+      commit_sha: ${{ github.sha }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+  prepare-files:
+    name: Prepare Files for Deployment
+    runs-on: ubuntu-latest
+    needs: checkout
+    outputs:
+      archive_path: ${{ env.DEPLOY_DIR }}
+    env:
+      DEPLOY_DIR: /tmp/matrix-deploy
+    steps:
+      - name: Create deployment directory
+        run: mkdir -p $DEPLOY_DIR
+
+      - name: Copy necessary files
+        run: |
+          cp -r ./* $DEPLOY_DIR/
+          chmod +x $DEPLOY_DIR/scripts/*.sh
+
+      - name: Archive for upload
+        run: cd /tmp && tar czf matrix-deploy.tar.gz matrix-deploy
+
+      - name: Save archive as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: matrix-deploy-archive
+          path: /tmp/matrix-deploy.tar.gz
+
+  deploy-to-server:
+    name: Deploy to Remote Server
+    runs-on: ubuntu-latest
+    needs: prepare-files
+    steps:
+      - name: Download deployment archive
+        uses: actions/download-artifact@v3
+        with:
+          name: matrix-deploy-archive
+          path: /tmp
+
+      - name: Extract files
+        run: |
+          mkdir -p /tmp/matrix-deploy
+          tar xzf /tmp/matrix-deploy.tar.gz -C /tmp/
+
+      - name: Upload files via SSH and deploy
+        uses: webfactory/ssh-action@v0.6.2
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            echo "=== Очистка старой директории ==="
+            rm -rf /home/ubuntu/matrix
+            mkdir -p /home/ubuntu/matrix
+
+            echo "=== Копирование файлов ==="
+            cp -r /tmp/matrix-deploy/* /home/ubuntu/matrix/
+
+            echo "=== Запуск скрипта деплоя ==="
+            cd /home/ubuntu/matrix
+            chmod +x scripts/*.sh
+            ./scripts/deploy.sh
+
+  post-checks:
+    name: Post-Deploy Checks
+    runs-on: ubuntu-latest
+    needs: deploy-to-server
+    steps:
+      - name: Check Web UI is reachable
+        uses: jakejarvis/waitforweb-action@master
+        with:
+          url: https://__DOMAIN__
+          timeout: 60
+          interval: 5
+
+      - name: Check API endpoint
+        uses: jakejarvis/waitforweb-action@master
+        with:
+          url: https://__DOMAIN__/_matrix/client/versions
+          timeout: 60
+          interval: 5
+
+      - name: Notify Success (optional)
+        run: echo "Деплой успешно завершён и сервисы доступны!"

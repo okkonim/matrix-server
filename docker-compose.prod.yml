@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Matrix Synapse — основной сервер
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: matrix-synapse
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    volumes:
+      - ./synapse/data:/data
+    environment:
+      - SYNAPSE_SERVER_NAME=__DOMAIN__
+      - SYNAPSE_REPORT_STATS=no
+    networks:
+      - matrix-net
+
+  # PostgreSQL — база данных для Synapse
+  postgres:
+    image: postgres:15
+    container_name: matrix-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=matrix
+      - POSTGRES_USER=matrix
+      - POSTGRES_PASSWORD=__POSTGRES_PASSWORD__
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - matrix-net
+
+  # Element — клиентский интерфейс для Matrix
+  element:
+    image: ghcr.io/vector-im/element:latest
+    container_name: element
+    restart: unless-stopped
+    ports:
+      - "8123:80"
+    environment:
+      - REACT_APP_MATRIX_CLIENT_URL=__CLIENT_URL__
+    volumes:
+      - ./element/config.json:/app/config.json
+    networks:
+      - matrix-net
+
+  # Synapse Admin — веб-панель управления
+  synapse-admin:
+    image: awesometechnologies/synapse-admin:latest
+    container_name: synapse-admin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - REACT_APP_SERVER=__DOMAIN__
+    networks:
+      - matrix-net
+
+# Общая сеть для всех контейнеров
+networks:
+  matrix-net:
+    driver: bridge
+
+# Внешние тома
+volumes:
+  postgres_data:

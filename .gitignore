@@ -1,0 +1,46 @@
+# === Секреты и приватные данные ===
+.env
+.env.*
+*.env
+
+# === Данные и volume'ы ===
+/synapse/data/
+/postgres_data/
+/element/config.json
+
+# === Логи и временные файлы ===
+*.log
+*.tmp
+*.swp
+*.bak
+*.old
+
+# === Артефакты Docker ===
+**/data/
+**/postgres_data/
+**/element/config.json
+
+# === Артефакты CI/CD ===
+*.tar.gz
+*.zip
+*.tar
+
+# === Системные файлы ===
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# === Скрипты и временные файлы ===
+*.sh~
+
+# === Исключения для шаблонов ===
+!data/config.json
+!nginx/default.conf
+
+# === Node/Python (на всякий случай) ===
+node_modules/
+__pycache__/
+*.pyc 

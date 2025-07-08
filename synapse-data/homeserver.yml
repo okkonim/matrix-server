@@ -1,0 +1,52 @@
+# Пример конфигурации для homeserver.yml
+
+server_name: "__DOMAIN__"
+
+report_stats: false
+public_baseurl: "https://__DOMAIN__"
+pid_file: "/data/homeserver.pid"
+
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    bind_addresses: ['0.0.0.0']
+    resources:
+      - names: [client, federation]
+        compress: false
+
+database:
+  name: psycopg2
+  txn_limit: 10000
+  args:
+    user: matrix
+    password: matrix
+    database: matrix
+    host: postgres
+    port: 5432
+    cp_min: 10
+    cp_max: 50
+
+log_config: "/data/__DOMAIN__.log.config"
+media_store_path: /data/media
+signing_key_path: "/data/__DOMAIN__.signing.key"
+
+trusted_key_servers:
+  - server_name: "matrix.org"
+
+suppress_key_server_warning: true
+max_upload_size: 100M
+enable_registration: true
+registration_shared_secret: "__REGISTRATION_SHARED_SECRET__"
+enable_registration_without_verification: true
+
+search_all_users: true
+prefer_local_users: true
+
+turn_uris: ["turn:__DOMAIN__?transport=udp", "turn:__DOMAIN__?transport=tcp"]
+turn_shared_secret: "__TURN_SHARED_SECRET__"
+turn_user_lifetime: 86400000
+
+admin_users:
+  - "@__ADMIN_USER__:__DOMAIN__"
