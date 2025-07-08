@@ -9,7 +9,7 @@ services:
     ports:
       - "8008:8008"
     volumes:
-      - ./synapse/data:/data
+      - ./synapse-data:/data
     environment:
       - SYNAPSE_SERVER_NAME=__DOMAIN__
       - SYNAPSE_REPORT_STATS=no
@@ -41,7 +41,7 @@ services:
     environment:
       - REACT_APP_MATRIX_CLIENT_URL=__CLIENT_URL__
     volumes:
-      - ./element/config.json:/app/config.json
+      - ./element-data/element-config.json:/app/config.json
     networks:
       - matrix-net
 

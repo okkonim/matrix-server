@@ -80,26 +80,121 @@ fi
 
 cd "$PROJECT_DIR"
 
-# === Замена __DOMAIN__ в шаблонах ===
-find . -type f -name "*.template" -o -name "*.conf" -o -name "*.yml" | while read file; do
-  sed -i "s/__DOMAIN__/$DOMAIN/g" "$file"
+# === Подстановка всех переменных из .env в шаблоны ===
+set -a
+source .env
+set +a
+find . -type f \( -name "*.template" -o -name "*.conf" -o -name "*.yml" -o -name "*.json" \) | while read file; do
+  for var in $(env | grep -E '^[A-Z0-9_]+=' | cut -d= -f1); do
+    val=$(eval echo \$$var)
+    sed -i "s|__${var}__|$val|g" "$file"
+  done
 done
 
-# === Создание .env файла с данными ===
-cat > .env <<EOL
-DOMAIN=$DOMAIN
-HOMESERVER_URL=https://$DOMAIN
-CLIENT_URL=https://$DOMAIN
-IDENTITY_SERVER_URL=https://vector.im 
-SCALAR_UI_URL=https://scalar.vector.im/ 
-SCALAR_API_URL=https://scalar.vector.im/api 
-SCALAR_WIDGETS_URL_1=https://scalar.vector.im/_matrix/integrations/v1 
-SCALAR_WIDGETS_URL_2=https://scalar.vector.im/api 
-BUG_REPORT_URL=https://element.io/bugreports/submit 
-PRIVACY_POLICY_URL=https://element.io/privacy 
-COOKIE_POLICY_URL=https://element.io/cookie-policy 
-POSTGRES_PASSWORD=__your_secure_password_here__
+# === Создание или обновление .env файла с данными ===
+if [ -f .env ]; then
+  echo ".env уже существует. Хотите заполнить или перезаписать его? (y/n)"
+  read -r fill_env
+  if [[ ! "$fill_env" =~ ^[Yy]$ ]]; then
+    echo "Существующий .env не изменён."
+  else
+    echo "Заполнение .env..."
+    read -p "DOMAIN: " DOMAIN_INPUT
+    read -p "EMAIL: " EMAIL_INPUT
+    read -p "POSTGRES_PASSWORD: " POSTGRES_PASSWORD_INPUT
+    read -p "HOMESERVER_URL [https://$DOMAIN_INPUT]: " HOMESERVER_URL_INPUT
+    HOMESERVER_URL_INPUT=${HOMESERVER_URL_INPUT:-https://$DOMAIN_INPUT}
+    read -p "CLIENT_URL [https://$DOMAIN_INPUT]: " CLIENT_URL_INPUT
+    CLIENT_URL_INPUT=${CLIENT_URL_INPUT:-https://$DOMAIN_INPUT}
+    read -p "IDENTITY_SERVER_URL [https://vector.im]: " IDENTITY_SERVER_URL_INPUT
+    IDENTITY_SERVER_URL_INPUT=${IDENTITY_SERVER_URL_INPUT:-https://vector.im}
+    read -p "SCALAR_UI_URL [https://scalar.vector.im/]: " SCALAR_UI_URL_INPUT
+    SCALAR_UI_URL_INPUT=${SCALAR_UI_URL_INPUT:-https://scalar.vector.im/}
+    read -p "SCALAR_API_URL [https://scalar.vector.im/api]: " SCALAR_API_URL_INPUT
+    SCALAR_API_URL_INPUT=${SCALAR_API_URL_INPUT:-https://scalar.vector.im/api}
+    read -p "SCALAR_WIDGETS_URL_1 [https://scalar.vector.im/_matrix/integrations/v1]: " SCALAR_WIDGETS_URL_1_INPUT
+    SCALAR_WIDGETS_URL_1_INPUT=${SCALAR_WIDGETS_URL_1_INPUT:-https://scalar.vector.im/_matrix/integrations/v1}
+    read -p "SCALAR_WIDGETS_URL_2 [https://scalar.vector.im/api]: " SCALAR_WIDGETS_URL_2_INPUT
+    SCALAR_WIDGETS_URL_2_INPUT=${SCALAR_WIDGETS_URL_2_INPUT:-https://scalar.vector.im/api}
+    read -p "BUG_REPORT_URL [https://element.io/bugreports/submit]: " BUG_REPORT_URL_INPUT
+    BUG_REPORT_URL_INPUT=${BUG_REPORT_URL_INPUT:-https://element.io/bugreports/submit}
+    read -p "PRIVACY_POLICY_URL [https://element.io/privacy]: " PRIVACY_POLICY_URL_INPUT
+    PRIVACY_POLICY_URL_INPUT=${PRIVACY_POLICY_URL_INPUT:-https://element.io/privacy}
+    read -p "COOKIE_POLICY_URL [https://element.io/cookie-policy]: " COOKIE_POLICY_URL_INPUT
+    COOKIE_POLICY_URL_INPUT=${COOKIE_POLICY_URL_INPUT:-https://element.io/cookie-policy}
+    read -p "REGISTRATION_SHARED_SECRET (случайная строка): " REGISTRATION_SHARED_SECRET_INPUT
+    read -p "TURN_SHARED_SECRET (случайная строка): " TURN_SHARED_SECRET_INPUT
+    read -p "ADMIN_USER [adminuser]: " ADMIN_USER_INPUT
+    ADMIN_USER_INPUT=${ADMIN_USER_INPUT:-adminuser}
+    cat > .env <<EOL
+DOMAIN=$DOMAIN_INPUT
+EMAIL=$EMAIL_INPUT
+POSTGRES_PASSWORD=$POSTGRES_PASSWORD_INPUT
+HOMESERVER_URL=$HOMESERVER_URL_INPUT
+CLIENT_URL=$CLIENT_URL_INPUT
+IDENTITY_SERVER_URL=$IDENTITY_SERVER_URL_INPUT
+SCALAR_UI_URL=$SCALAR_UI_URL_INPUT
+SCALAR_API_URL=$SCALAR_API_URL_INPUT
+SCALAR_WIDGETS_URL_1=$SCALAR_WIDGETS_URL_1_INPUT
+SCALAR_WIDGETS_URL_2=$SCALAR_WIDGETS_URL_2_INPUT
+BUG_REPORT_URL=$BUG_REPORT_URL_INPUT
+PRIVACY_POLICY_URL=$PRIVACY_POLICY_URL_INPUT
+COOKIE_POLICY_URL=$COOKIE_POLICY_URL_INPUT
+REGISTRATION_SHARED_SECRET=$REGISTRATION_SHARED_SECRET_INPUT
+TURN_SHARED_SECRET=$TURN_SHARED_SECRET_INPUT
+ADMIN_USER=$ADMIN_USER_INPUT
 EOL
+    echo ".env успешно заполнен."
+  fi
+else
+  echo ".env не найден. Заполнение .env..."
+  read -p "DOMAIN: " DOMAIN_INPUT
+  read -p "EMAIL: " EMAIL_INPUT
+  read -p "POSTGRES_PASSWORD: " POSTGRES_PASSWORD_INPUT
+  read -p "HOMESERVER_URL [https://$DOMAIN_INPUT]: " HOMESERVER_URL_INPUT
+  HOMESERVER_URL_INPUT=${HOMESERVER_URL_INPUT:-https://$DOMAIN_INPUT}
+  read -p "CLIENT_URL [https://$DOMAIN_INPUT]: " CLIENT_URL_INPUT
+  CLIENT_URL_INPUT=${CLIENT_URL_INPUT:-https://$DOMAIN_INPUT}
+  read -p "IDENTITY_SERVER_URL [https://vector.im]: " IDENTITY_SERVER_URL_INPUT
+  IDENTITY_SERVER_URL_INPUT=${IDENTITY_SERVER_URL_INPUT:-https://vector.im}
+  read -p "SCALAR_UI_URL [https://scalar.vector.im/]: " SCALAR_UI_URL_INPUT
+  SCALAR_UI_URL_INPUT=${SCALAR_UI_URL_INPUT:-https://scalar.vector.im/}
+  read -p "SCALAR_API_URL [https://scalar.vector.im/api]: " SCALAR_API_URL_INPUT
+  SCALAR_API_URL_INPUT=${SCALAR_API_URL_INPUT:-https://scalar.vector.im/api}
+  read -p "SCALAR_WIDGETS_URL_1 [https://scalar.vector.im/_matrix/integrations/v1]: " SCALAR_WIDGETS_URL_1_INPUT
+  SCALAR_WIDGETS_URL_1_INPUT=${SCALAR_WIDGETS_URL_1_INPUT:-https://scalar.vector.im/_matrix/integrations/v1}
+  read -p "SCALAR_WIDGETS_URL_2 [https://scalar.vector.im/api]: " SCALAR_WIDGETS_URL_2_INPUT
+  SCALAR_WIDGETS_URL_2_INPUT=${SCALAR_WIDGETS_URL_2_INPUT:-https://scalar.vector.im/api}
+  read -p "BUG_REPORT_URL [https://element.io/bugreports/submit]: " BUG_REPORT_URL_INPUT
+  BUG_REPORT_URL_INPUT=${BUG_REPORT_URL_INPUT:-https://element.io/bugreports/submit}
+  read -p "PRIVACY_POLICY_URL [https://element.io/privacy]: " PRIVACY_POLICY_URL_INPUT
+  PRIVACY_POLICY_URL_INPUT=${PRIVACY_POLICY_URL_INPUT:-https://element.io/privacy}
+  read -p "COOKIE_POLICY_URL [https://element.io/cookie-policy]: " COOKIE_POLICY_URL_INPUT
+  COOKIE_POLICY_URL_INPUT=${COOKIE_POLICY_URL_INPUT:-https://element.io/cookie-policy}
+  read -p "REGISTRATION_SHARED_SECRET (случайная строка): " REGISTRATION_SHARED_SECRET_INPUT
+  read -p "TURN_SHARED_SECRET (случайная строка): " TURN_SHARED_SECRET_INPUT
+  read -p "ADMIN_USER [adminuser]: " ADMIN_USER_INPUT
+  ADMIN_USER_INPUT=${ADMIN_USER_INPUT:-adminuser}
+  cat > .env <<EOL
+DOMAIN=$DOMAIN_INPUT
+EMAIL=$EMAIL_INPUT
+POSTGRES_PASSWORD=$POSTGRES_PASSWORD_INPUT
+HOMESERVER_URL=$HOMESERVER_URL_INPUT
+CLIENT_URL=$CLIENT_URL_INPUT
+IDENTITY_SERVER_URL=$IDENTITY_SERVER_URL_INPUT
+SCALAR_UI_URL=$SCALAR_UI_URL_INPUT
+SCALAR_API_URL=$SCALAR_API_URL_INPUT
+SCALAR_WIDGETS_URL_1=$SCALAR_WIDGETS_URL_1_INPUT
+SCALAR_WIDGETS_URL_2=$SCALAR_WIDGETS_URL_2_INPUT
+BUG_REPORT_URL=$BUG_REPORT_URL_INPUT
+PRIVACY_POLICY_URL=$PRIVACY_POLICY_URL_INPUT
+COOKIE_POLICY_URL=$COOKIE_POLICY_URL_INPUT
+REGISTRATION_SHARED_SECRET=$REGISTRATION_SHARED_SECRET_INPUT
+TURN_SHARED_SECRET=$TURN_SHARED_SECRET_INPUT
+ADMIN_USER=$ADMIN_USER_INPUT
+EOL
+  echo ".env успешно создан и заполнен."
+fi
 
 # === Настройка Nginx ===
 sudo cp "$PROJECT_DIR/nginx/default.conf" "/etc/nginx/sites-available/matrix"

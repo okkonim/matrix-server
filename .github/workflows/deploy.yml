@@ -58,11 +58,11 @@ jobs:
           tar xzf /tmp/matrix-deploy.tar.gz -C /tmp/
 
       - name: Upload files via SSH and deploy
-        uses: webfactory/ssh-action@v0.6.2
+        uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
-          private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
             echo "=== Очистка старой директории ==="
@@ -76,6 +76,7 @@ jobs:
             cd /home/ubuntu/matrix
             chmod +x scripts/*.sh
             ./scripts/deploy.sh
+          
 
   post-checks:
     name: Post-Deploy Checks
@@ -83,18 +84,20 @@ jobs:
     needs: deploy-to-server
     steps:
       - name: Check Web UI is reachable
-        uses: jakejarvis/waitforweb-action@master
+        uses: nick-invision/retry@v2
         with:
-          url: https://__DOMAIN__
-          timeout: 60
-          interval: 5
+          timeout_minutes: 2
+          max_attempts: 12
+          command: |
+            curl -fsSL --retry 5 --retry-delay 5 --max-time 10 https://__DOMAIN__
 
       - name: Check API endpoint
-        uses: jakejarvis/waitforweb-action@master
+        uses: nick-invision/retry@v2
         with:
-          url: https://__DOMAIN__/_matrix/client/versions
-          timeout: 60
-          interval: 5
+          timeout_minutes: 2
+          max_attempts: 12
+          command: |
+            curl -fsSL --retry 5 --retry-delay 5 --max-time 10 https://__DOMAIN__/_matrix/client/versions
 
       - name: Notify Success (optional)
         run: echo "Деплой успешно завершён и сервисы доступны!"
