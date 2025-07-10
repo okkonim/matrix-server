@@ -165,7 +165,7 @@ ADMIN_USER=adminuser
 - Настраивает well-known endpoints для Matrix клиентов и федерации
 - Использует SSL-сертификаты из `/etc/letsencrypt/live/$DOMAIN/`
 
-### data/config.json
+### element-data/element-config.json
 - Конфиг для Element (Matrix клиент)
 - Все URL и параметры подставляются из .env
 
@@ -231,7 +231,7 @@ docker run --rm -v $(pwd)/synapse/data:/data -v $(pwd):/backup busybox tar czf /
 ## Расширение и кастомизация
 
 - Можно добавить интеграции, боты, bridge'ы, дополнительные сервисы в docker-compose
-- Для кастомизации Element — изменяйте `data/config.json`
+- Для кастомизации Element — изменяйте `element-data/element-config.json`
 - Для кастомизации Synapse — изменяйте `synapse-data/homeserver.yml`
 
 ---
